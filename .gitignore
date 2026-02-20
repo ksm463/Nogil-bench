@@ -26,6 +26,7 @@ coverage.xml
 uploads/
 outputs/
 benchmarks/
+tests/fixtures/output/
 
 # Logs
 *.log
