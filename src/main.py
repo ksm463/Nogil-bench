@@ -1,11 +1,10 @@
-import sys
-import sysconfig
-
 import uvicorn
 from fastapi import FastAPI
 
 from core.config import settings
 from core.lifespan import lifespan
+import model.user  # noqa: F401 — 테이블 등록
+import model.image  # noqa: F401 — 테이블 등록
 
 app = FastAPI(
     title=settings.APP_NAME,
