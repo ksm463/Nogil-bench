@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     # DB 설정 (Day 2: SQLite → Day 6: PostgreSQL)
     DATABASE_URL: str = "sqlite:///./nogil_bench.db"
 
+    # 파일 저장 경로
+    UPLOAD_DIR: str = "/app/uploads"
+    OUTPUT_DIR: str = "/app/outputs"
+
     # Python 환경 정보 (읽기 전용, 환경에서 자동 감지)
     @property
     def python_version(self) -> str:

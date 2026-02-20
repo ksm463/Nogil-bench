@@ -3,6 +3,7 @@ from fastapi import FastAPI
 
 from core.config import settings
 from core.lifespan import lifespan
+from router.image_router import router as image_router
 import model.user  # noqa: F401 — 테이블 등록
 import model.image  # noqa: F401 — 테이블 등록
 
@@ -12,6 +13,8 @@ app = FastAPI(
     description="Free-threaded Python backend benchmark — 4가지 동시성 모델 비교",
     lifespan=lifespan,
 )
+
+app.include_router(image_router)
 
 
 @app.get("/health")
