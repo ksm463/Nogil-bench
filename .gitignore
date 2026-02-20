@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+*.so
+
+# Virtual environment
+.venv/
+uv.lock
+
+# Environment variables
+.env
+
+# Database
+*.db
+
+# pytest
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+
+# Image data
+uploads/
+outputs/
+benchmarks/
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.backup
+
+# Docs (학습 기록, 개인 노트)
+docs/
