@@ -19,7 +19,7 @@ OPERATIONS = {
 }
 
 
-def save_upload(file: UploadFile, session: Session) -> ImageRecord:
+def save_upload(file: UploadFile, user_id: int, session: Session) -> ImageRecord:
     """파일을 디스크에 저장하고 DB에 기록한다."""
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
@@ -33,6 +33,7 @@ def save_upload(file: UploadFile, session: Session) -> ImageRecord:
     record = ImageRecord(
         filename=file.filename or "unknown",
         original_path=saved_path,
+        user_id=user_id,
     )
     session.add(record)
     session.commit()
@@ -40,23 +41,34 @@ def save_upload(file: UploadFile, session: Session) -> ImageRecord:
     return record
 
 
-def list_images(session: Session) -> list[ImageRecord]:
-    """이미지 목록을 반환한다."""
-    return list(session.exec(select(ImageRecord)).all())
+def list_images(user_id: int, session: Session) -> list[ImageRecord]:
+    """해당 사용자의 이미지 목록만 반환한다."""
+    return list(
+        session.exec(
+            select(ImageRecord).where(ImageRecord.user_id == user_id)
+        ).all()
+    )
 
 
-def get_image(image_id: int, session: Session) -> ImageRecord | None:
-    """ID로 이미지를 조회한다."""
-    return session.get(ImageRecord, image_id)
+def get_image_or_raise(image_id: int, user_id: int, session: Session) -> ImageRecord:
+    """ID로 이미지를 조회하고, 소유권을 검증한다.
+
+    - 이미지가 없으면 None 대신 구분 가능한 예외를 발생시킨다.
+    - 다른 사용자의 이미지면 PermissionError를 발생시킨다.
+    """
+    record = session.get(ImageRecord, image_id)
+    if not record:
+        raise LookupError("Image not found")
+    if record.user_id != user_id:
+        raise PermissionError("Access denied")
+    return record
 
 
 def process_image(
-    image_id: int, operation: str, params: dict, session: Session
-) -> ImageRecord | None:
+    image_id: int, operation: str, params: dict, user_id: int, session: Session
+) -> ImageRecord:
     """이미지에 처리를 적용하고 결과를 저장한다."""
-    record = session.get(ImageRecord, image_id)
-    if not record:
-        return None
+    record = get_image_or_raise(image_id, user_id, session)
 
     op_func = OPERATIONS.get(operation)
     if not op_func:
@@ -83,11 +95,9 @@ def process_image(
     return record
 
 
-def delete_image(image_id: int, session: Session) -> bool:
+def delete_image(image_id: int, user_id: int, session: Session) -> bool:
     """이미지 레코드와 파일을 삭제한다."""
-    record = session.get(ImageRecord, image_id)
-    if not record:
-        return False
+    record = get_image_or_raise(image_id, user_id, session)
 
     for path in [record.original_path, record.output_path]:
         if path and os.path.exists(path):
