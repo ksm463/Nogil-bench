@@ -3,6 +3,7 @@ from fastapi import FastAPI
 
 from core.config import settings
 from core.lifespan import lifespan
+from router.auth_router import router as auth_router
 from router.image_router import router as image_router
 import model.user  # noqa: F401 — 테이블 등록
 import model.image  # noqa: F401 — 테이블 등록
@@ -14,6 +15,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.include_router(auth_router)
 app.include_router(image_router)
 
 

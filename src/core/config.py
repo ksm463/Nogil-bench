@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "/app/uploads"
     OUTPUT_DIR: str = "/app/outputs"
 
+    # JWT 설정
+    JWT_SECRET_KEY: str = "dev-secret-key-change-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRE_MINUTES: int = 30
+
     # Python 환경 정보 (읽기 전용, 환경에서 자동 감지)
     @property
     def python_version(self) -> str:
