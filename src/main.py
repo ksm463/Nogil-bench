@@ -2,6 +2,8 @@ import uvicorn
 from fastapi import FastAPI
 
 from core.config import settings
+from core.error_handlers import app_exception_handler
+from core.exceptions import AppException
 from core.lifespan import lifespan
 from core.middleware import RequestLoggingMiddleware
 from router.auth_router import router as auth_router
@@ -17,6 +19,7 @@ app = FastAPI(
 )
 
 app.add_middleware(RequestLoggingMiddleware)
+app.add_exception_handler(AppException, app_exception_handler)
 
 app.include_router(auth_router)
 app.include_router(image_router)

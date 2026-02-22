@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr
 from sqlmodel import Session
@@ -38,10 +38,7 @@ class UserResponse(BaseModel):
 @router.post("/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
 def register(req: RegisterRequest, session: Session = Depends(get_session)):
     """회원가입: 이메일 + 패스워드 → 사용자 생성."""
-    try:
-        user = auth_service.register(req.email, req.password, session)
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    user = auth_service.register(req.email, req.password, session)
     return RegisterResponse(id=user.id, email=user.email)
 
 
@@ -54,11 +51,6 @@ def login(form: OAuth2PasswordRequestForm = Depends(), session: Session = Depend
     - form.username에 이메일을 넣음 (OAuth2 표준 필드명이 username)
     """
     token = auth_service.login(form.username, form.password, session)
-    if not token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="이메일 또는 패스워드가 올바르지 않습니다",
-        )
     return TokenResponse(access_token=token)
 
 

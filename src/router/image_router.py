@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlmodel import Session
 
 from core.dependencies import get_current_user
+from core.exceptions import ImageNotProcessed
 from model.database import get_session
 from model.user import User
 from service import image_service
@@ -39,12 +40,7 @@ def get_image(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    try:
-        return image_service.get_image_or_raise(image_id, current_user.id, session)
-    except LookupError:
-        raise HTTPException(status_code=404, detail="Image not found")
-    except PermissionError:
-        raise HTTPException(status_code=403, detail="Access denied")
+    return image_service.get_image_or_raise(image_id, current_user.id, session)
 
 
 @router.post("/{image_id}/process")
@@ -54,16 +50,9 @@ def process_image(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    try:
-        return image_service.process_image(
-            image_id, req.operation, req.params, current_user.id, session
-        )
-    except LookupError:
-        raise HTTPException(status_code=404, detail="Image not found")
-    except PermissionError:
-        raise HTTPException(status_code=403, detail="Access denied")
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    return image_service.process_image(
+        image_id, req.operation, req.params, current_user.id, session
+    )
 
 
 @router.get("/{image_id}/download")
@@ -72,15 +61,9 @@ def download_image(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    try:
-        record = image_service.get_image_or_raise(image_id, current_user.id, session)
-    except LookupError:
-        raise HTTPException(status_code=404, detail="Image not found")
-    except PermissionError:
-        raise HTTPException(status_code=403, detail="Access denied")
-
+    record = image_service.get_image_or_raise(image_id, current_user.id, session)
     if not record.output_path:
-        raise HTTPException(status_code=400, detail="Image not processed yet")
+        raise ImageNotProcessed
     return FileResponse(record.output_path, filename=f"{record.filename}")
 
 
@@ -90,10 +73,5 @@ def delete_image(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    try:
-        image_service.delete_image(image_id, current_user.id, session)
-    except LookupError:
-        raise HTTPException(status_code=404, detail="Image not found")
-    except PermissionError:
-        raise HTTPException(status_code=403, detail="Access denied")
+    image_service.delete_image(image_id, current_user.id, session)
     return {"detail": "Deleted"}

@@ -6,6 +6,7 @@ from PIL import Image
 from sqlmodel import Session, select
 
 from core.config import settings
+from core.exceptions import Forbidden, ImageNotFound, InvalidOperation
 from model.image import ImageRecord
 from processor.operations import blur, grayscale, resize, rotate, sharpen, watermark
 
@@ -58,9 +59,9 @@ def get_image_or_raise(image_id: int, user_id: int, session: Session) -> ImageRe
     """
     record = session.get(ImageRecord, image_id)
     if not record:
-        raise LookupError("Image not found")
+        raise ImageNotFound
     if record.user_id != user_id:
-        raise PermissionError("Access denied")
+        raise Forbidden
     return record
 
 
@@ -72,7 +73,7 @@ def process_image(
 
     op_func = OPERATIONS.get(operation)
     if not op_func:
-        raise ValueError(f"Unknown operation: {operation}")
+        raise InvalidOperation(f"지원하지 않는 작업: {operation}")
 
     os.makedirs(settings.OUTPUT_DIR, exist_ok=True)
 
