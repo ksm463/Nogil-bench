@@ -48,6 +48,3 @@ tmp/
 temp/
 *.tmp
 *.backup
-
-# Docs (학습 기록, 개인 노트)
-docs/
