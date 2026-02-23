@@ -6,6 +6,7 @@
 - second_user_headers: 소유권 테스트용 두 번째 유저 헤더
 """
 
+import os
 import sys
 from pathlib import Path
 
@@ -79,3 +80,16 @@ def auth_headers(client):
 def second_user_headers(client):
     """두 번째 테스트 유저의 인증 헤더 (소유권 테스트용)."""
     return _register_and_login(client, "user2@test.com", "pass5678")
+
+
+@pytest.fixture()
+def pg_engine():
+    """PostgreSQL 엔진. TEST_DATABASE_URL이 없으면 skip."""
+    url = os.environ.get("TEST_DATABASE_URL")
+    if not url:
+        pytest.skip("TEST_DATABASE_URL not set — PostgreSQL 테스트 생략")
+    engine = create_engine(url)
+    SQLModel.metadata.create_all(engine)
+    yield engine
+    SQLModel.metadata.drop_all(engine)
+    engine.dispose()

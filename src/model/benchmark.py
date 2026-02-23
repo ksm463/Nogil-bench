@@ -11,5 +11,6 @@ class BenchmarkResult(SQLModel, table=True):
     image_count: int
     duration: float  # seconds
     gil_enabled: bool
+    db_backend: str | None = Field(default=None)  # "sqlite" or "postgresql"
     user_id: int | None = Field(default=None, foreign_key="user.id")
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

@@ -15,7 +15,10 @@ async def lifespan(app: FastAPI):
     logger.info(f"GIL enabled: {settings.gil_enabled}")
 
     create_db_and_tables()
-    logger.info(f"Database ready ({settings.DATABASE_URL})")
+    db_type = "PostgreSQL" if "postgresql" in settings.DATABASE_URL else "SQLite"
+    logger.info(f"Database ready: {db_type}")
+    if db_type == "PostgreSQL":
+        logger.info(f"  pool_size={settings.DB_POOL_SIZE}, max_overflow={settings.DB_MAX_OVERFLOW}")
 
     app.state.settings = settings
 

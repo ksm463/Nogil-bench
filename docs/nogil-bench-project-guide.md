@@ -60,7 +60,7 @@ GPU/AI 없이 **CPU만으로 이미지 변환**(리사이즈, 블러, 샤프닝,
 |------|------|------|
 | **언어** | Python 3.14t | free-threaded 빌드 (GIL 비활성화 가능) |
 | **웹 프레임워크** | FastAPI + Uvicorn | 기존 grpc-diffusion-server web-manager와 동일 패턴 |
-| **DB** | SQLite → PostgreSQL | Day 1-4는 SQLite로 빠르게 시작, Day 6에서 PostgreSQL로 마이그레이션 |
+| **DB** | SQLite → PostgreSQL | Day 1-5는 SQLite로 빠르게 시작, Day 6에서 동시성 실험과 함께 PostgreSQL 도입 |
 | **ORM** | SQLModel | SQLAlchemy + Pydantic 통합, FastAPI 제작자가 설계 |
 | **인증** | 직접 JWT 구현 | python-jose + passlib로 토큰 생성/검증, 패스워드 해싱 직접 구현 |
 | **이미지 처리** | Pillow | CPU-bound 이미지 변환 (리사이즈, 필터, 워터마크 등) |
@@ -77,7 +77,7 @@ Docker Container (개발 환경)
 ├── Python 3.14t (free-threaded 빌드)
 ├── PYTHON_GIL=0 환경변수로 GIL 비활성화
 ├── uv (패키지 관리)
-├── SQLite (Day 1-4) → PostgreSQL 컨테이너 추가 (Day 6)
+├── SQLite (Day 1-5) → DB 동시성 실험 + PostgreSQL 도입 (Day 6)
 └── 볼륨 마운트: 로컬 코드 편집 → 컨테이너에서 실행
 ```
 
@@ -378,61 +378,64 @@ nogil-bench/
 
 ---
 
-### Day 6 (토) — Docker 정리 + PostgreSQL 마이그레이션
+### Day 6 (토) — DB 동시성 실험 + PostgreSQL 도입
 
-#### 백엔드 학습
+> 방향 전환: 단순히 PostgreSQL 컨테이너를 추가하는 것이 아니라,
+> "왜 SQLite는 동시 쓰기에 약하고, PostgreSQL은 강한가"를 실험으로 이해한다.
 
-- [ ] `docker-compose.yml`에 PostgreSQL 컨테이너 추가
-  ```yaml
-  services:
-    app:
-      build: .
-      environment:
-        - PYTHON_GIL=0
-        - DATABASE_URL=postgresql://...
-      volumes:
-        - ./src:/app/src        # 코드 마운트
-      depends_on:
-        - db
-    db:
-      image: postgres:16
-      environment:
-        - POSTGRES_DB=nogil_bench
-        - POSTGRES_USER=...
-        - POSTGRES_PASSWORD=...
-      volumes:
-        - pgdata:/var/lib/postgresql/data
-  ```
-- [ ] SQLite → PostgreSQL 마이그레이션
-  - SQLModel 엔진 URL만 변경하면 동작하는지 확인
-  - 차이점이 있다면 해결
-- [ ] Dockerfile 멀티스테이지 빌드
-  ```dockerfile
-  # Stage 1: base — 의존성 설치
-  # Stage 2: test — 테스트 실행 (CI용)
-  # Stage 3: production — 최종 이미지 (테스트 제외)
-  ```
-- [ ] `.env.example` + `.env.development` + `.env.production` 환경 분리
-- [ ] 각 서비스에 healthcheck 추가
-- [ ] MCP PostgreSQL Server 설정 (개발 도구)
-  - Claude Code에서 DB 스키마 확인, 데이터 조회 등 개발 편의 용도
+#### 1단계: SQLite 동시성 한계 실험 (문제 체감)
 
-#### 동시성 학습
+- [ ] `scripts/bench_db_sqlite_limits.py` — SQLite 동시 쓰기 한계 재현
+  - 파일 기반 SQLite에 8 스레드 동시 INSERT → `database is locked` 에러
+  - WAL 모드 켜고/끄고 비교
+  - GIL=0에서 진짜 병렬 스레드가 문제를 심화시키는 것 확인
+- [ ] `tests/test_db_concurrency.py` — SQLite 한계 테스트
+  - 동시 쓰기 시 지연 또는 에러 발생 확인
+  - WAL 모드의 읽기 동시성 개선 확인
 
-- [ ] 벤치마크 결과를 PostgreSQL에 저장
-- [ ] 대규모 벤치마크 매트릭스 실행:
+#### 2단계: PostgreSQL 도입 (설정을 이해하며)
+
+- [ ] `docker-compose.yml` — app + PostgreSQL (healthcheck, restart 포함)
+- [ ] `pyproject.toml` — `psycopg[binary]` 의존성 추가
+- [ ] `src/core/config.py` — `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`, `DB_ECHO` 설정
+- [ ] `src/model/database.py` — 핵심 재작성
+  - SQLite vs PostgreSQL 분기 처리
+  - 커넥션 풀 설정 상세 주석 (pool_size, max_overflow, pool_pre_ping, pool_recycle)
+  - 각 설정이 왜 필요한지, 잘못 설정하면 어떤 문제가 생기는지
+- [ ] `.env.example` — 환경변수 문서화
+- [ ] `src/core/lifespan.py` — DB 타입 + 풀 설정 로깅
+
+#### 3단계: 동시 쓰기 벤치마크 (SQLite vs PostgreSQL)
+
+- [ ] `scripts/bench_db_write.py` — 동일 워크로드로 두 DB 비교
+  - 스레드 수 1/2/4/8/16으로 동시 쓰기 100건/스레드
+  - SQLite: 스레드 늘려도 writes/sec 정체 → 단일 쓰기 직렬화
+  - PostgreSQL: 스레드에 비례해 writes/sec 증가 → MVCC 동시 쓰기
+
+#### 4단계: 커넥션 풀 크기 실험
+
+- [ ] `scripts/bench_db_pool.py` — pool_size별 성능 비교
+  - pool_size=1, 5, 10, 20 (max_overflow=0으로 효과 격리)
+  - 20개 동시 스레드 × 5회 쓰기
+  - pool_size < 동시 사용자 수 → 병목, pool_size ≈ 사용자 수가 최적
+
+#### 5단계: 48조합 벤치마크 매트릭스
+
+- [ ] `scripts/bench_matrix_full.py` — 전체 매트릭스 실행
   ```
   이미지 수: 10, 50, 100장
   스레드 수: 1, 2, 4, 8
   방식: sync, threading(GIL), multiprocessing, free-threaded
   = 총 48가지 조합
   ```
-- [ ] 결과 비교 API로 매트릭스 조회
+- [ ] 결과를 PostgreSQL에 저장, 비교 API로 조회
 
 #### 결과물
 
+- SQLite 동시성 한계를 직접 체감하고 원인 이해
 - `docker compose up`으로 전체 스택 (app + PostgreSQL) 실행
-- PostgreSQL에서 모든 기능 정상 동작
+- SQLite vs PostgreSQL 동시 쓰기 성능 비교 데이터
+- 커넥션 풀 설정의 영향을 정량적으로 확인
 - 48가지 조합 벤치마크 매트릭스 데이터
 
 ---
@@ -445,12 +448,8 @@ nogil-bench/
   - 모든 엔드포인트에 summary, description 추가
   - 에러 응답 명세 (401, 403, 404, 422)
   - OpenAPI/Swagger에서 깔끔하게 보이는지 확인
-- [ ] E2E 통합 테스트 (`tests/integration/test_e2e_flow.py`)
-  ```
-  회원가입 → 로그인 → 이미지 업로드 → 단건 처리 → 다운로드
-  → 배치 처리 → 상태 조회 → 결과 다운로드
-  → 벤치마크 실행 → 결과 비교
-  ```
+- [x] E2E 통합 테스트 — **Day 5에서 완료** (`tests/test_integration.py`)
+  - 배치 전체 플로우, 벤치마크 전체 플로우, 4방식 동시 실행 검증
 - [ ] 코드 자가 리뷰 체크리스트:
   ```
   □ 모든 엔드포인트에 인증 적용 확인
@@ -464,28 +463,29 @@ nogil-bench/
 
 #### 동시성 학습
 
-- [ ] 최종 벤치마크 리포트 정리:
+- [ ] 최종 벤치마크 리포트 정리 (Day 5 + Day 6 데이터 종합):
   ```
-  | 방식              | 10장   | 50장    | 100장   | 메모리  | CPU% |
-  |-------------------|--------|---------|---------|---------|------|
-  | sync              | ???ms  | ???ms   | ???ms   | ???MB   | ???% |
-  | threading (GIL=1) | ???ms  | ???ms   | ???ms   | ???MB   | ???% |
-  | multiprocessing   | ???ms  | ???ms   | ???ms   | ???MB   | ???% |
-  | free-threaded     | ???ms  | ???ms   | ???ms   | ???MB   | ???% |
+  | 방식              | 10장   | 50장    | 100장   |
+  |-------------------|--------|---------|---------|
+  | sync              | ???ms  | ???ms   | ???ms   |
+  | threading (GIL=1) | ???ms  | ???ms   | ???ms   |
+  | multiprocessing   | ???ms  | ???ms   | ???ms   |
+  | free-threaded     | ???ms  | ???ms   | ???ms   |
   ```
 - [ ] thread-safety 실험:
   - free-threaded에서 공유 자원 접근 시 race condition 재현
   - `threading.Lock`으로 해결
   - GIL이 숨겨주던 동시성 버그를 직접 경험
 - [ ] 결론 정리:
-  - 각 방식의 장단점
+  - 각 동시성 방식의 장단점
+  - SQLite vs PostgreSQL 동시성 차이 (Day 6 결과 포함)
   - 언제 어떤 방식을 선택해야 하는가
   - free-threaded Python의 현재 한계와 전망
 
 #### 결과물
 
 - 완성된 프로젝트 (전체 기능 + 테스트 + 문서)
-- 최종 벤치마크 리포트
+- 최종 벤치마크 리포트 (동시성 + DB 동시성)
 - 동시성 방식 선택 가이드
 
 ---

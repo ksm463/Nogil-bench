@@ -1,0 +1,59 @@
+##############################################################
+# Nogil-bench: app + PostgreSQL
+#
+# 사용법:
+#   docker compose up -d          # 전체 시작
+#   docker compose logs -f app    # 앱 로그
+#   docker compose down           # 전체 종료
+#
+# 기존 단독 컨테이너(nogil-bench)와 병행 가능하지만,
+# 포트 충돌(8000)을 피하려면 기존 컨테이너를 먼저 중지:
+#   docker stop nogil-bench
+##############################################################
+
+services:
+  # ---- PostgreSQL ----
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: nogil
+      POSTGRES_PASSWORD: nogil-bench-dev
+      POSTGRES_DB: nogil_bench
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nogil -d nogil_bench"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # ---- App (기존 Dockerfile 활용) ----
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base
+    container_name: nogil-bench-compose
+    environment:
+      - PYTHON_GIL=0
+      - DATABASE_URL=postgresql+psycopg://nogil:nogil-bench-dev@db:5432/nogil_bench
+      - DB_POOL_SIZE=5
+      - DB_MAX_OVERFLOW=10
+    ports:
+      - "8001:8000"
+    volumes:
+      - .:/app
+      - compose-venv:/app/.venv
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    # 컨테이너가 종료되지 않도록 유지
+    command: bash -c "uv sync --no-cache && cd /app/src && uv run main.py"
+
+volumes:
+  pgdata:
+  compose-venv:

@@ -14,8 +14,13 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
 
-    # DB 설정 (Day 2: SQLite → Day 6: PostgreSQL)
+    # DB 설정 (SQLite / PostgreSQL)
     DATABASE_URL: str = "sqlite:///./nogil_bench.db"
+
+    # 커넥션 풀 설정 (PostgreSQL 전용, SQLite에서는 무시됨)
+    DB_POOL_SIZE: int = 5        # 풀에 유지하는 상시 커넥션 수
+    DB_MAX_OVERFLOW: int = 10    # 풀 초과 시 추가로 열 수 있는 커넥션 수
+    DB_ECHO: bool = False        # SQL 쿼리 로깅
 
     # 파일 저장 경로
     UPLOAD_DIR: str = "/app/uploads"

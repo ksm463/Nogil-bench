@@ -45,5 +45,5 @@ docker exec nogil-bench uv run pytest
 
 - Python 3.14t (free-threaded, GIL 비활성화)
 - FastAPI + Uvicorn
-- SQLModel (SQLite → 추후 PostgreSQL)
+- SQLModel (SQLite / PostgreSQL)
 - 패키지 관리: uv

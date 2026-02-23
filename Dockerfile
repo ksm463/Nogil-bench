@@ -42,7 +42,7 @@ FROM python:3.14-slim AS base
 ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=Asia/Seoul
 
-RUN apt-get update && apt-get install -y tzdata && \
+RUN apt-get update && apt-get install -y tzdata libpq5 && \
     ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
