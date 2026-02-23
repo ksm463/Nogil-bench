@@ -83,3 +83,18 @@ class InvalidMethod(AppException):
     status_code = 400
     error_code = "INVALID_METHOD"
     message = "지원하지 않는 벤치마크 방식입니다"
+
+
+# --- 작업(Job) 관련 ---
+
+
+class JobNotFound(AppException):
+    status_code = 404
+    error_code = "JOB_NOT_FOUND"
+    message = "작업을 찾을 수 없습니다"
+
+
+class JobNotCompleted(AppException):
+    status_code = 400
+    error_code = "JOB_NOT_COMPLETED"
+    message = "작업이 아직 완료되지 않았습니다"

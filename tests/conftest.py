@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from main import app
 from model.database import get_session
+from service import job_service
 
 
 @pytest.fixture()
@@ -34,8 +35,11 @@ def session():
         poolclass=StaticPool,
     )
     SQLModel.metadata.create_all(engine)
+    # BackgroundTasks(process_job)가 테스트 DB를 사용하도록 엔진 오버라이드
+    job_service._engine = engine
     with Session(engine) as s:
         yield s
+    job_service._engine = None
 
 
 @pytest.fixture()

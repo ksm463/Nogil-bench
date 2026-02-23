@@ -9,9 +9,11 @@ from core.middleware import RequestLoggingMiddleware
 from router.auth_router import router as auth_router
 from router.benchmark_router import router as benchmark_router
 from router.image_router import router as image_router
+from router.job_router import router as job_router
 import model.user  # noqa: F401 — 테이블 등록
 import model.image  # noqa: F401 — 테이블 등록
 import model.benchmark  # noqa: F401 — 테이블 등록
+import model.job  # noqa: F401 — 테이블 등록
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -26,6 +28,7 @@ app.add_exception_handler(AppException, app_exception_handler)
 app.include_router(auth_router)
 app.include_router(image_router)
 app.include_router(benchmark_router)
+app.include_router(job_router)
 
 
 @app.get("/health")
