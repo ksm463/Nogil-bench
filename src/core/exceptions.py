@@ -68,3 +68,18 @@ class ImageNotProcessed(AppException):
     status_code = 400
     error_code = "IMAGE_NOT_PROCESSED"
     message = "아직 처리되지 않은 이미지입니다"
+
+
+# --- 벤치마크 관련 ---
+
+
+class BenchmarkNotFound(AppException):
+    status_code = 404
+    error_code = "BENCHMARK_NOT_FOUND"
+    message = "벤치마크 결과를 찾을 수 없습니다"
+
+
+class InvalidMethod(AppException):
+    status_code = 400
+    error_code = "INVALID_METHOD"
+    message = "지원하지 않는 벤치마크 방식입니다"

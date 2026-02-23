@@ -36,6 +36,11 @@ docker exec nogil-bench uv run pytest
 - 문서: `docs/`
 - 스크립트: `src/scripts/`
 
+## 검증 방법
+
+- 새로운 모듈이나 기능을 만든 후 검증할 때는 **일회성 스크립트나 인라인 python -c 대신 pytest 테스트를 작성**한다.
+- 테스트는 `tests/` 디렉토리에 작성하고 `docker exec nogil-bench uv run pytest`로 실행한다.
+
 ## 기술 스택
 
 - Python 3.14t (free-threaded, GIL 비활성화)
