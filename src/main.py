@@ -18,7 +18,16 @@ import model.job  # noqa: F401 — 테이블 등록
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="Free-threaded Python backend benchmark — 4가지 동시성 모델 비교",
+    description=(
+        "Free-threaded Python(3.14t, GIL=0) 백엔드 벤치마크 프로젝트.\n\n"
+        "이미지 프로세싱 API를 통해 4가지 동시성 모델"
+        "(sync, threading, multiprocessing, free-threaded)의 성능을 비교한다.\n\n"
+        "**주요 기능:**\n"
+        "- JWT 인증 (회원가입/로그인)\n"
+        "- 이미지 업로드, 처리(blur, resize, grayscale 등), 다운로드\n"
+        "- 배치 작업 생성 및 백그라운드 처리\n"
+        "- 벤치마크 실행 및 결과 비교"
+    ),
     lifespan=lifespan,
 )
 
@@ -31,7 +40,12 @@ app.include_router(benchmark_router)
 app.include_router(job_router)
 
 
-@app.get("/health")
+@app.get(
+    "/health",
+    tags=["system"],
+    summary="헬스체크",
+    description="서버 상태, Python 버전, GIL 활성화 여부를 반환한다.",
+)
 async def health():
     return {
         "status": "ok",

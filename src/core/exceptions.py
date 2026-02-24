@@ -4,6 +4,15 @@ AppException을 상속하면 전역 핸들러(error_handlers.py)가 자동으로
 {"error_code": "...", "message": "..."} 형식의 JSON 응답을 생성한다.
 """
 
+from pydantic import BaseModel
+
+
+class ErrorResponse(BaseModel):
+    """API 에러 응답 공통 스키마. OpenAPI 문서에서 에러 예시로 사용."""
+
+    error_code: str
+    message: str
+
 
 class AppException(Exception):
     """앱 전역 베이스 예외.
