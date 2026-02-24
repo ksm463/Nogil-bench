@@ -229,6 +229,7 @@
 | threading w=8 vs sync | 100장 blur | **5.4배** (4.1s vs 22.1s) |
 | PostgreSQL vs SQLite | 16스레드 동시 쓰기 | **11.3배** (4,794 vs 425 w/s) |
 | pool_size=20 vs pool_size=1 | 20스레드 동시 쓰기 | **8.1배** (2,691 vs 333 w/s) |
+| Lock 없음 vs Lock 사용 | 공유 카운터 8스레드 | **81% 값 손실 vs 정확** |
 
 ### 5-3. free-threaded Python의 가치와 한계
 
@@ -248,7 +249,55 @@
 
 ---
 
-## 6. 벤치마크 스크립트 목록
+## 6. Thread-Safety 실험 (Day 7)
+
+### 6-1. 공유 카운터 race condition
+
+> GIL=0, 8스레드 × 100,000회 증가, 기댓값 800,000
+
+| 조건 | 결과 | 손실률 |
+|------|------|--------|
+| Lock 없음 | ~150,000 | **81%** |
+| Lock 사용 | 800,000 | **0%** |
+
+```
+  read-modify-write race condition:
+
+  Thread A: current = counter["value"]  # 100
+  Thread B: current = counter["value"]  # 100 (A가 쓰기 전에 읽음)
+  Thread A: counter["value"] = 101
+  Thread B: counter["value"] = 101      # 102가 되어야 하는데 101 → 1회 손실
+```
+
+### 6-2. Check-then-act (TOCTOU)
+
+> 8스레드, limit=100,000
+
+| 조건 | 결과 |
+|------|------|
+| Lock 없음 | limit 초과 (check과 act 사이 끼어들기) |
+| Lock 사용 | limit 정확 준수 |
+
+### 6-3. GIL=1 vs GIL=0 비교
+
+| | GIL=1 | GIL=0 |
+|---|---|---|
+| 공유 카운터 | 손실 없음 (우연히 안전) | **81% 손실** |
+| Check-then-act | 초과 없음 | **limit 초과** |
+
+- GIL=1에서 "안전하게 보이는" 코드가 GIL=0에서 즉시 깨짐
+- `threading.Lock`으로 critical section을 보호하면 GIL 유무 무관하게 정확
+
+### 6-4. 실무 가이드
+
+- 공유 상태를 변경하는 코드 → `threading.Lock` 또는 `queue.Queue` 사용
+- 불변 데이터 공유 → Lock 불필요 (읽기 전용은 안전)
+- Lock 범위를 최소화 → Lock 구간은 직렬화되므로 병렬 이점 감소
+- 가능하면 스레드 간 데이터 공유를 최소화 (thread-local, 메시지 패싱)
+
+---
+
+## 7. 벤치마크 스크립트 목록
 
 | 스크립트 | 위치 | 실행 방법 |
 |---------|------|----------|
@@ -261,3 +310,4 @@
 | SQLite 한계 | src/scripts/bench_db_sqlite_limits.py | 동일 |
 | SQLite vs PG | src/scripts/bench_db_write.py | 동일 (PostgreSQL 필요) |
 | 커넥션 풀 | src/scripts/bench_db_pool.py | 동일 (PostgreSQL 필요) |
+| Thread-safety | src/scripts/bench_thread_safety.py | `docker exec nogil-bench-compose uv run python src/scripts/bench_thread_safety.py` |

@@ -55,7 +55,7 @@ Python의 GIL(Global Interpreter Lock)은 멀티스레드에서 CPU-bound 작업
 | 인증 | JWT (PyJWT + pwdlib/bcrypt) |
 | 이미지 처리 | Pillow |
 | 패키지 관리 | uv |
-| 테스트 | pytest (80개, 커버리지 93%) |
+| 테스트 | pytest (86개, 커버리지 93%) |
 | 린팅 | Ruff |
 | 컨테이너 | Docker + Docker Compose |
 
@@ -212,6 +212,16 @@ docs/                        # Day별 진행 기록
 - SQLite: 스레드를 늘려도 writes/s 정체 (파일 레벨 잠금)
 - PostgreSQL: MVCC 덕분에 스레드에 비례하여 증가
 
+### Thread-Safety 실험 (GIL=0, 8스레드)
+
+| 실험 | Lock 없음 | Lock 사용 |
+|------|----------|----------|
+| 공유 카운터 (80만 증가) | ~15만 (**81% 손실**) | 80만 (정확) |
+| Check-then-act (limit=10만) | limit 초과 | limit 정확 준수 |
+
+- GIL=1에서는 "우연히 안전"했던 코드가 GIL=0에서 즉시 깨짐
+- `threading.Lock`으로 critical section을 보호하면 해결
+
 ---
 
 ## 학습 기록
@@ -224,7 +234,7 @@ docs/                        # Day별 진행 기록
 | [Day 4](docs/day4-progress.md) | 테스트 + 에러 처리 | pytest 31개, 커스텀 예외, 동시성 3종 비교 |
 | [Day 5](docs/day5-progress.md) | Free-threaded 실험 | 4가지 러너, 배치 API, 벤치마크 매트릭스 |
 | [Day 6](docs/day6-progress.md) | DB 동시성 | SQLite 한계, PostgreSQL MVCC, 커넥션 풀 |
-| Day 7 | 통합 + 마무리 | API 문서, 코드 리뷰, README, 최종 리포트 |
+| [Day 7](docs/day7-progress.md) | 통합 + 마무리 | API 문서, 코드 리뷰, README, 최종 리포트, thread-safety |
 
 ---
 
