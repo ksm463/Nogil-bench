@@ -10,6 +10,7 @@ from core.error_handlers import app_exception_handler
 from core.exceptions import AppException
 from core.lifespan import lifespan
 from core.middleware import RequestLoggingMiddleware
+from core.openapi import create_custom_openapi
 from router.auth_router import router as auth_router
 from router.benchmark_router import router as benchmark_router
 from router.image_router import router as image_router
@@ -29,7 +30,19 @@ app = FastAPI(
         "- 벤치마크 실행 및 결과 비교"
     ),
     lifespan=lifespan,
+    contact={
+        "name": "GitHub Repository",
+        "url": "https://github.com/ksm463/Nogil-bench",
+    },
+    swagger_ui_parameters={
+        "persistAuthorization": True,
+        "docExpansion": "list",
+        "filter": True,
+        "defaultModelsExpandDepth": 1,
+    },
 )
+
+app.openapi = create_custom_openapi(app)
 
 app.add_middleware(RequestLoggingMiddleware)
 app.add_exception_handler(AppException, app_exception_handler)
