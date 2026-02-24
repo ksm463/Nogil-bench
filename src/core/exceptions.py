@@ -107,3 +107,8 @@ class JobNotCompleted(AppException):
     status_code = 400
     error_code = "JOB_NOT_COMPLETED"
     message = "작업이 아직 완료되지 않았습니다"
+
+
+# --- OpenAPI 공통 응답 스키마 ---
+
+AUTH_401 = {"model": ErrorResponse, "description": "인증 실패 (토큰 누락/만료)"}

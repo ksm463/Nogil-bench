@@ -1,3 +1,4 @@
+import json
 from datetime import UTC, datetime
 
 from sqlmodel import Field, SQLModel
@@ -18,3 +19,11 @@ class Job(SQLModel, table=True):
     error_message: str | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     completed_at: datetime | None = None
+
+    @property
+    def image_id_list(self) -> list[int]:
+        return json.loads(self.image_ids)
+
+    @property
+    def params_dict(self) -> dict:
+        return json.loads(self.params)

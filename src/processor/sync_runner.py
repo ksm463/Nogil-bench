@@ -7,7 +7,7 @@ from processor import operations
 
 def run(image_paths: list[str], operation: str, params: dict | None = None) -> list[Image.Image]:
     """이미지를 순차적으로 처리한다."""
-    op_func = getattr(operations, operation)
+    op_func = operations.get_operation(operation)
     params = params or {}
     results = []
 

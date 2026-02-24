@@ -1,7 +1,7 @@
 """free-threaded (GIL=0) threading 러너.
 
 PYTHON_GIL=0 + --disable-gil 빌드에서 threading이 진정한 병렬 처리를 달성한다.
-thread_runner.py와 코드 구조는 동일하지만, 런타임에 GIL 비활성화를 검증한다.
+thread_runner.py와 실행 로직은 동일하지만, 런타임에 GIL 비활성화를 검증한다.
 
 이 러너가 존재하는 이유:
   - thread_runner: GIL=1 환경에서 threading의 한계를 보여줌
@@ -10,11 +10,10 @@ thread_runner.py와 코드 구조는 동일하지만, 런타임에 GIL 비활성
 """
 
 import sys
-from concurrent.futures import ThreadPoolExecutor
 
 from PIL import Image
 
-from processor import operations
+from processor import thread_runner
 
 
 def run(
@@ -30,14 +29,4 @@ def run(
             "PYTHON_GIL=0 환경변수와 --disable-gil 빌드가 필요합니다."
         )
 
-    op_func = getattr(operations, operation)
-    params = params or {}
-
-    def process_one(path: str) -> Image.Image:
-        img = Image.open(path).convert("RGB")
-        return op_func(img, **params)
-
-    with ThreadPoolExecutor(max_workers=workers) as pool:
-        results = list(pool.map(process_one, image_paths))
-
-    return results
+    return thread_runner.run(image_paths, operation, params, workers)

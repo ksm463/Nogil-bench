@@ -6,6 +6,7 @@ import time
 
 from sqlmodel import Session, select
 
+from core.constants import OPERATION_NAMES, get_default_params
 from core.exceptions import BenchmarkNotFound, InvalidMethod, InvalidOperation
 from model.benchmark import BenchmarkResult
 from processor import frethread_runner, mp_runner, sync_runner, thread_runner
@@ -16,8 +17,6 @@ METHODS = {
     "multiprocessing": mp_runner,
     "frethread": frethread_runner,
 }
-
-OPERATIONS = {"blur", "grayscale", "resize", "rotate", "sharpen", "watermark"}
 
 FIXTURES_DIR = "/app/tests/fixtures"
 
@@ -44,18 +43,12 @@ def run_benchmark(
     """벤치마크를 실행하고 결과를 DB에 저장한다."""
     if method not in METHODS:
         raise InvalidMethod(f"지원하지 않는 방식: {method}. 가능한 값: {list(METHODS.keys())}")
-    if operation not in OPERATIONS:
-        raise InvalidOperation(f"지원하지 않는 작업: {operation}. 가능한 값: {list(OPERATIONS)}")
+    if operation not in OPERATION_NAMES:
+        raise InvalidOperation(f"지원하지 않는 작업: {operation}. 가능한 값: {list(OPERATION_NAMES)}")
 
     runner = METHODS[method]
     image_paths = _get_image_paths(image_count)
-    params = params or {}
-
-    # operation별 기본 params
-    if operation == "resize" and not params:
-        params = {"width": 200, "height": 200}
-    if operation == "blur" and not params:
-        params = {"radius": 10}
+    params = get_default_params(operation, params)
 
     start = time.perf_counter()
     if method == "sync":
@@ -102,10 +95,16 @@ def compare_benchmarks(
     ids: list[int], user_id: int, session: Session
 ) -> list[BenchmarkResult]:
     """여러 벤치마크 결과를 비교용으로 조회한다."""
-    results = []
-    for bid in ids:
-        result = session.get(BenchmarkResult, bid)
-        if not result or result.user_id != user_id:
-            raise BenchmarkNotFound(f"벤치마크 #{bid}을(를) 찾을 수 없습니다")
-        results.append(result)
+    results = list(
+        session.exec(
+            select(BenchmarkResult).where(
+                BenchmarkResult.id.in_(ids),
+                BenchmarkResult.user_id == user_id,
+            )
+        ).all()
+    )
+    if len(results) != len(ids):
+        found_ids = {r.id for r in results}
+        missing = [bid for bid in ids if bid not in found_ids]
+        raise BenchmarkNotFound(f"벤치마크 #{missing[0]}을(를) 찾을 수 없습니다")
     return results

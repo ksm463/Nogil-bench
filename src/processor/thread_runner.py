@@ -19,7 +19,7 @@ def run(
     workers: int = 4,
 ) -> list[Image.Image]:
     """ThreadPoolExecutor로 이미지를 병렬 처리한다."""
-    op_func = getattr(operations, operation)
+    op_func = operations.get_operation(operation)
     params = params or {}
 
     def process_one(path: str) -> Image.Image:

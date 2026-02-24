@@ -44,3 +44,12 @@ def watermark(image: Image.Image, text: str = "nogil-bench") -> Image.Image:
 
     draw.text((x, y), text, fill=(255, 255, 255, 128), font=font)
     return overlay
+
+
+def get_operation(name: str):
+    """operation 이름으로 함수를 반환한다. 잘못된 이름이면 ValueError."""
+    from core.constants import OPERATION_NAMES
+
+    if name not in OPERATION_NAMES:
+        raise ValueError(f"Unknown operation: {name}. 가능한 값: {OPERATION_NAMES}")
+    return globals()[name]

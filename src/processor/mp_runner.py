@@ -21,7 +21,7 @@ _params: dict = {}
 
 def _process_one(path: str) -> Image.Image:
     """단일 이미지 처리 — 모듈 최상위 함수 (pickle 호환)."""
-    op_func = getattr(operations, _operation)
+    op_func = operations.get_operation(_operation)
     img = Image.open(path).convert("RGB")
     return op_func(img, **_params)
 

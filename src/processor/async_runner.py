@@ -27,7 +27,7 @@ async def run(
     CPU-bound 함수를 async로 감싸도 내부에 await 포인트가 없으므로
     이벤트 루프를 블로킹하며 순차 실행된다.
     """
-    op_func = getattr(operations, operation)
+    op_func = operations.get_operation(operation)
     params = params or {}
     results = []
 
@@ -51,7 +51,7 @@ async def run_with_executor(
     이벤트 루프가 블로킹되지 않으면서 스레드에서 병렬 실행.
     GIL=1이면 스레드가 순차 실행되고, GIL=0이면 진짜 병렬.
     """
-    op_func = getattr(operations, operation)
+    op_func = operations.get_operation(operation)
     params = params or {}
 
     def process_one(path: str) -> Image.Image:

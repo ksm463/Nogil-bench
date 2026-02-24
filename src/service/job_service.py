@@ -13,6 +13,7 @@ from PIL import Image
 from sqlmodel import Session, select
 
 from core.config import settings
+from core.constants import METHOD_NAMES, OPERATION_NAMES, get_default_params
 from core.exceptions import (
     Forbidden,
     ImageNotFound,
@@ -25,9 +26,6 @@ from model.database import engine as default_engine
 from model.image import ImageRecord
 from model.job import Job
 from processor import operations
-
-METHODS = {"sync", "threading", "multiprocessing", "frethread"}
-OPERATIONS = {"blur", "grayscale", "resize", "rotate", "sharpen", "watermark"}
 
 # BackgroundTasks에서 사용할 엔진. 테스트 시 오버라이드 가능.
 _engine = None
@@ -47,9 +45,9 @@ def create_job(
     session: Session,
 ) -> Job:
     """배치 작업을 생성한다. 이미지 소유권을 검증하고 Job 레코드를 DB에 저장."""
-    if method not in METHODS:
+    if method not in METHOD_NAMES:
         raise InvalidMethod(f"지원하지 않는 방식: {method}")
-    if operation not in OPERATIONS:
+    if operation not in OPERATION_NAMES:
         raise InvalidOperation(f"지원하지 않는 작업: {operation}")
 
     # 이미지 소유권 검증
@@ -89,21 +87,17 @@ def process_job(job_id: int) -> None:
         job.status = "processing"
         session.commit()
 
-        image_ids = json.loads(job.image_ids)
-        params = json.loads(job.params)
-        op_func = getattr(operations, job.operation, None)
-
-        if not op_func:
+        image_ids = job.image_id_list
+        params = job.params_dict
+        try:
+            op_func = operations.get_operation(job.operation)
+        except ValueError as e:
             job.status = "failed"
-            job.error_message = f"Unknown operation: {job.operation}"
+            job.error_message = str(e)
             session.commit()
             return
 
-        # operation별 기본 params
-        if job.operation == "resize" and not params:
-            params = {"width": 200, "height": 200}
-        if job.operation == "blur" and not params:
-            params = {"radius": 10}
+        params = get_default_params(job.operation, params)
 
         os.makedirs(settings.OUTPUT_DIR, exist_ok=True)
         start = time.perf_counter()
@@ -162,10 +156,8 @@ def get_job_result(job_id: int, user_id: int, session: Session) -> list[ImageRec
     if job.status != "completed":
         raise JobNotCompleted(f"작업이 아직 완료되지 않았습니다 (현재: {job.status})")
 
-    image_ids = json.loads(job.image_ids)
-    results = []
-    for iid in image_ids:
-        record = session.get(ImageRecord, iid)
-        if record:
-            results.append(record)
-    return results
+    return list(
+        session.exec(
+            select(ImageRecord).where(ImageRecord.id.in_(job.image_id_list))
+        ).all()
+    )
