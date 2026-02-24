@@ -11,9 +11,9 @@ import asyncio
 import os
 import sys
 
-from processor.sync_runner import run as sync_run
 from processor.async_runner import run as async_run
 from processor.async_runner import run_with_executor
+from processor.sync_runner import run as sync_run
 from utility.timer import timer
 
 FIXTURES_DIR = "/app/tests/fixtures"

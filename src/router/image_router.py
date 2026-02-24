@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -13,8 +15,8 @@ router = APIRouter(prefix="/api/images", tags=["images"])
 
 
 class ProcessRequest(BaseModel):
-    operation: str
-    params: dict = {}
+    operation: Literal["blur", "grayscale", "resize", "rotate", "sharpen", "watermark"]
+    params: dict | None = None
 
 
 _AUTH_401 = {"model": ErrorResponse, "description": "인증 실패 (토큰 누락/만료)"}
@@ -81,7 +83,7 @@ def process_image(
     session: Session = Depends(get_session),
 ):
     return image_service.process_image(
-        image_id, req.operation, req.params, current_user.id, session
+        image_id, req.operation, req.params or {}, current_user.id, session
     )
 
 

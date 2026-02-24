@@ -9,7 +9,6 @@
 
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
-from functools import partial
 
 from PIL import Image
 

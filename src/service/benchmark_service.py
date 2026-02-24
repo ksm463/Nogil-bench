@@ -8,8 +8,7 @@ from sqlmodel import Session, select
 
 from core.exceptions import BenchmarkNotFound, InvalidMethod, InvalidOperation
 from model.benchmark import BenchmarkResult
-from processor import sync_runner, thread_runner, mp_runner, frethread_runner
-from processor.operations import blur, grayscale, resize, rotate, sharpen, watermark
+from processor import frethread_runner, mp_runner, sync_runner, thread_runner
 
 METHODS = {
     "sync": sync_runner,

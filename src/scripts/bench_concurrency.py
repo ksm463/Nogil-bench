@@ -85,8 +85,6 @@ def _run_bench(label, count, sync_fn, thread_fn, mp_fn, workers):
 
 def _run_pillow_bench(label, images, workers):
     """Pillow 전용 벤치마크 (multiprocessing에 path 전달 필요)."""
-    count = len(images)
-
     def blur_one(path):
         img = Image.open(path).convert("RGB")
         operations.blur(img, radius=10)

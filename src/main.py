@@ -1,6 +1,10 @@
 import uvicorn
 from fastapi import FastAPI
 
+import model.benchmark  # noqa: F401 — 테이블 등록
+import model.image  # noqa: F401 — 테이블 등록
+import model.job  # noqa: F401 — 테이블 등록
+import model.user  # noqa: F401 — 테이블 등록
 from core.config import settings
 from core.error_handlers import app_exception_handler
 from core.exceptions import AppException
@@ -10,10 +14,6 @@ from router.auth_router import router as auth_router
 from router.benchmark_router import router as benchmark_router
 from router.image_router import router as image_router
 from router.job_router import router as job_router
-import model.user  # noqa: F401 — 테이블 등록
-import model.image  # noqa: F401 — 테이블 등록
-import model.benchmark  # noqa: F401 — 테이블 등록
-import model.job  # noqa: F401 — 테이블 등록
 
 app = FastAPI(
     title=settings.APP_NAME,

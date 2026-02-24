@@ -51,7 +51,7 @@ class TestLogin:
         """잘못된 패스워드 → 401 INVALID_CREDENTIALS."""
         client.post(
             "/auth/register",
-            json={"email": "wp@test.com", "password": "correct"},
+            json={"email": "wp@test.com", "password": "correct1234"},
         )
         resp = client.post(
             "/auth/login",

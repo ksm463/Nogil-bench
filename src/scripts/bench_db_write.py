@@ -206,7 +206,7 @@ def main():
             print("\n⚠ PostgreSQL DSN이 설정되지 않음 (DATABASE_URL 환경변수 확인)")
             print("  docker-compose 환경에서 실행하세요.")
         else:
-            print(f"\n[PostgreSQL]")
+            print("\n[PostgreSQL]")
             _print_header()
             pg_results = bench_pg(pg_dsn)
 
@@ -226,7 +226,7 @@ def main():
         # 16스레드 기준 비교
         s16 = sqlite_results[-1]
         p16 = pg_results[-1]
-        print(f"\n16스레드 기준:")
+        print("\n16스레드 기준:")
         print(f"  SQLite:     {s16['wps']:.0f} writes/s (실패 {s16['failed']}건)")
         print(f"  PostgreSQL: {p16['wps']:.0f} writes/s (실패 {p16['failed']}건)")
         if p16["wps"] > s16["wps"]:

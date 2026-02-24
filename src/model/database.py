@@ -16,7 +16,7 @@ PostgreSQL:
     * pool_recycle: N초 후 커넥션 재생성 (DB의 idle timeout 대비)
 """
 
-from sqlmodel import SQLModel, Session, create_engine
+from sqlmodel import Session, SQLModel, create_engine
 
 from core.config import settings
 

@@ -58,8 +58,7 @@ class TestRunBenchmark:
             json={"method": "invalid", "operation": "blur", "image_count": 2},
             headers=auth_headers,
         )
-        assert resp.status_code == 400
-        assert resp.json()["error_code"] == "INVALID_METHOD"
+        assert resp.status_code == 422  # Literal 타입 검증 → Pydantic 422
 
     def test_run_invalid_operation(self, client, auth_headers):
         resp = client.post(
@@ -67,8 +66,7 @@ class TestRunBenchmark:
             json={"method": "sync", "operation": "invalid", "image_count": 2},
             headers=auth_headers,
         )
-        assert resp.status_code == 400
-        assert resp.json()["error_code"] == "INVALID_OPERATION"
+        assert resp.status_code == 422  # Literal 타입 검증 → Pydantic 422
 
     def test_run_without_auth(self, client):
         resp = client.post(

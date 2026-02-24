@@ -20,7 +20,7 @@ def test_error_has_error_code_and_message(client):
 
 def test_duplicate_email_error_format(client):
     """409 응답이 커스텀 형식을 따른다."""
-    payload = {"email": "fmt@test.com", "password": "pass"}
+    payload = {"email": "fmt@test.com", "password": "password1234"}
     client.post("/auth/register", json=payload)
 
     resp = client.post("/auth/register", json=payload)
@@ -43,8 +43,9 @@ def test_invalid_token_error_format(client):
 
 
 def test_invalid_operation_error_format(client, auth_headers):
-    """지원하지 않는 작업 → 400 + INVALID_OPERATION 형식."""
+    """지원하지 않는 작업 → 422 (Literal 타입 검증)."""
     import io
+
     from PIL import Image
 
     buf = io.BytesIO()
@@ -63,7 +64,4 @@ def test_invalid_operation_error_format(client, auth_headers):
         headers=auth_headers,
         json={"operation": "nonexistent_op"},
     )
-    assert resp.status_code == 400
-    data = resp.json()
-    assert data["error_code"] == "INVALID_OPERATION"
-    assert "message" in data
+    assert resp.status_code == 422  # Literal 타입 검증 → Pydantic 422

@@ -15,7 +15,6 @@ import os
 import sqlite3
 import sys
 import tempfile
-import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 

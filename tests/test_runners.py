@@ -10,8 +10,7 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from processor import sync_runner, thread_runner, mp_runner, frethread_runner
-
+from processor import frethread_runner, mp_runner, sync_runner, thread_runner
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
@@ -80,7 +79,8 @@ class TestFrethreadRunner:
     def test_resize(self, image_paths):
         if sys._is_gil_enabled():
             pytest.skip("GIL=0 환경에서만 실행 가능")
-        results = frethread_runner.run(image_paths, "resize", {"width": 60, "height": 60}, workers=2)
+        params = {"width": 60, "height": 60}
+        results = frethread_runner.run(image_paths, "resize", params, workers=2)
         assert all(r.size == (60, 60) for r in results)
 
 

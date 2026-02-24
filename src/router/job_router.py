@@ -4,6 +4,8 @@
 작업 상태를 조회하고, 완료된 결과를 확인한다.
 """
 
+from typing import Literal
+
 from fastapi import APIRouter, BackgroundTasks, Depends
 from pydantic import BaseModel, Field
 from sqlmodel import Session
@@ -19,9 +21,9 @@ router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
 class BatchRequest(BaseModel):
     image_ids: list[int] = Field(min_length=1)
-    operation: str = Field(default="blur")
+    operation: Literal["blur", "grayscale", "resize", "rotate", "sharpen", "watermark"] = "blur"
     params: dict | None = None
-    method: str = Field(default="sync")
+    method: Literal["sync", "threading", "multiprocessing", "frethread"] = "sync"
     workers: int = Field(default=4, ge=1, le=16)
 
 

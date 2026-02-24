@@ -7,7 +7,6 @@ Day 6:
 
 import os
 import sqlite3
-import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -83,7 +82,9 @@ class TestSQLiteConcurrentWrites:
         total_success = sum(r["success"] for r in results)
 
         # 8 스레드 동시 접근 시 잠금 에러가 발생해야 한다
-        assert total_locked > 0, "경합이 전혀 발생하지 않음 — timeout이 너무 길거나 스레드가 직렬화됨"
+        assert total_locked > 0, (
+            "경합이 전혀 발생하지 않음 — timeout이 너무 길거나 스레드가 직렬화됨"
+        )
         # 성공한 것도 있어야 한다
         assert total_success > 0
 
@@ -180,7 +181,8 @@ class TestWALMode:
 
 def _pg_insert(engine, thread_id: int, count: int) -> dict:
     """SQLModel 엔진으로 N행 INSERT."""
-    from sqlmodel import Session as SmSession, text
+    from sqlmodel import Session as SmSession
+    from sqlmodel import text
     success = 0
     for i in range(count):
         with SmSession(engine) as s:
@@ -238,7 +240,6 @@ class TestPostgreSQLConcurrency:
     def test_pool_size_affects_throughput(self):
         """pool_size 1 vs 10에서 처리량 차이가 있어야 한다."""
         from sqlmodel import create_engine, text
-        import os
 
         url = os.environ["TEST_DATABASE_URL"]
         threads = 10

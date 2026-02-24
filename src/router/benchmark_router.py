@@ -4,6 +4,8 @@
 성능을 측정하고 결과를 저장/비교한다.
 """
 
+from typing import Literal
+
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 from sqlmodel import Session
@@ -18,8 +20,8 @@ router = APIRouter(prefix="/api/benchmarks", tags=["benchmarks"])
 
 
 class BenchmarkRunRequest(BaseModel):
-    method: str = Field(description="sync, threading, multiprocessing, frethread")
-    operation: str = Field(default="blur", description="blur, resize, grayscale 등")
+    method: Literal["sync", "threading", "multiprocessing", "frethread"]
+    operation: Literal["blur", "grayscale", "resize", "rotate", "sharpen", "watermark"] = "blur"
     workers: int = Field(default=4, ge=1, le=16)
     image_count: int = Field(default=10, ge=1, le=100)
     params: dict | None = None
@@ -86,7 +88,7 @@ def compare_benchmarks(
 @router.get(
     "/{benchmark_id}",
     summary="벤치마크 결과 상세",
-    description="벤치마크 ID로 실행 결과 상세(방식, 워커 수, 소요 시간, 이미지당 시간 등)를 조회한다.",
+    description="벤치마크 ID로 실행 결과 상세를 조회한다.",
     responses={401: _AUTH_401, 404: _NOT_FOUND_404},
 )
 def get_benchmark(

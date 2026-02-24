@@ -14,7 +14,7 @@ Day 6 Stage 5: Day 5의 16조합(10장)을 확장하여 전체 데이터 확보.
 import sys
 import time
 
-from processor import sync_runner, thread_runner, mp_runner, frethread_runner
+from processor import frethread_runner, mp_runner, sync_runner, thread_runner
 
 FIXTURES_DIR = "/app/tests/fixtures"
 IMAGE_COUNTS = [10, 50, 100]
@@ -93,8 +93,7 @@ def main():
         print(f"\n{img_count}장 최적: {fastest[0]} w={fastest[1]} — {fastest[3]:.3f}s (sync대비 {fastest[3]/sync_t:.2f}x)")
 
     # 스케일링 분석: 100장 기준, 워커 수에 따른 변화
-    print(f"\n── 100장 스케일링 (워커 증가에 따른 속도 변화) ──")
-    sync_100 = next(r[3] for r in all_results if r[0] == "sync" and r[2] == 100)
+    print("\n── 100장 스케일링 (워커 증가에 따른 속도 변화) ──")
     print(f"{'방식':<20s}  {'w=1':>8s}  {'w=2':>8s}  {'w=4':>8s}  {'w=8':>8s}")
     print("-" * 55)
 
@@ -111,7 +110,7 @@ def main():
 
     # GIL 효과 분석
     if not sys._is_gil_enabled():
-        print(f"\n── GIL=0 효과 (threading vs frethread, 100장 w=4) ──")
+        print("\n── GIL=0 효과 (threading vs frethread, 100장 w=4) ──")
         t_thread = next((r[3] for r in all_results if r[0] == "threading" and r[1] == 4 and r[2] == 100), None)
         t_free = next((r[3] for r in all_results if r[0] == "frethread" and r[1] == 4 and r[2] == 100), None)
         if t_thread and t_free:
